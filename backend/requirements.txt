@@ -1,3 +1,13 @@
-fastapi
-uvicorn
-python-multipart
+# Web framework
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# AI agent framework
+crewai>=0.63.0
+
+# Gemini LLM (dùng qua LiteLLM trong CrewAI)
+google-generativeai>=0.7.0
+litellm>=1.40.0
+
+# Environment variables
+python-dotenv>=1.0.0
