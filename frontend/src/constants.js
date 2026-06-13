@@ -1,0 +1,107 @@
+export const SEVERITY_CONFIG = {
+  CRITICAL: { color: '#E24B4A', bg: '#3d1515', border: '#6a1f1e', label: 'Critical' },
+  HIGH:     { color: '#EF9F27', bg: '#2d1f06', border: '#5a3d0a', label: 'High'     },
+  MEDIUM:   { color: '#639922', bg: '#1a2a0a', border: '#3a5514', label: 'Medium'   },
+  LOW:      { color: '#1D9E75', bg: '#0a2a1e', border: '#0f5038', label: 'Low'      },
+  INFO:     { color: '#378ADD', bg: '#0c1e36', border: '#1a3d6b', label: 'Info'     },
+  TRACE:    { color: '#888780', bg: '#1a1a18', border: '#333330', label: 'Trace'    },
+};
+
+export const CLOUD_COLORS = [
+  '#FF9900', '#0078D4', '#4285F4', '#F80000',
+  '#1D9E75', '#7F77DD', '#EF9F27', '#388bfd',
+];
+
+export const NAV_ITEMS = [
+  { id: 'dashboard',  label: 'Dashboard',        icon: '⊞' },
+  { id: 'resources',  label: 'Tài nguyên',        icon: '◈' },
+  { id: 'scan',       label: 'Quét & Lỗ hổng',   icon: '⬡' },
+  { id: 'alerts',     label: 'Cảnh báo',          icon: '⚠' },
+  { id: 'reports',    label: 'Báo cáo',           icon: '⊟' },
+  { id: 'logs',       label: 'Logs',              icon: '≡' },
+  { id: 'config',     label: 'Cấu hình',          icon: '⚙' },
+  { id: 'users',      label: 'Người dùng',        icon: '◉' },
+  { id: 'settings',   label: 'Cài đặt',           icon: '≎' },
+];
+
+export const SAMPLE_DATA = {
+  summary: {
+    total: 153,
+    files_scanned: 1,
+    lines_scanned: 65,
+    critical: 0,
+    high: 131,
+    medium: 12,
+    low: 3,
+    info: 7,
+    scan_start: '2026-05-23T19:30:01Z',
+    scan_end:   '2026-05-23T19:30:29Z',
+    kics_version: 'snapshot-a35af6ae',
+  },
+  top_categories: [
+    { name: 'Encryption',     count: 42 },
+    { name: 'IAM',            count: 33 },
+    { name: 'Access Control', count: 36 },
+    { name: 'Networking',     count: 28 },
+    { name: 'Logging',        count: 14 },
+  ],
+  cloud_breakdown: [
+    { provider: 'AWS',   count: 131 },
+    { provider: 'Azure', count: 14  },
+    { provider: 'GCP',   count: 8   },
+  ],
+  findings: [
+    {
+      severity: 'HIGH', query_name: 'Block Device Is Not Encrypted',
+      category: 'Encryption', cloud_provider: 'AWS',
+      file: 'terraform/sample_iac.tf', line: 47,
+      resource_type: 'aws_instance', resource_name: 'bad_ec2',
+      description: 'Block device mappings for Launch Configurations and EC2 instances should mandate encryption of all attached EBS volumes.',
+      expected_value: 'aws_instance[bad_ec2].root_block_device.encrypted should be true',
+      actual_value:   'aws_instance[bad_ec2].root_block_device.encrypted is false',
+      risk_score: '6.0', platform: 'Terraform', cwe: '311',
+    },
+    {
+      severity: 'HIGH', query_name: 'IAM Policy Grants Full Permissions',
+      category: 'Access Control', cloud_provider: 'AWS',
+      file: 'terraform/sample_iac.tf', line: 55,
+      resource_type: 'aws_iam_policy', resource_name: 'overly-permissive-policy',
+      description: 'IAM policy should not grant full permissions to resources from the get-go.',
+      expected_value: 'IAM policy should restrict actions',
+      actual_value:   'IAM policy uses wildcard (*) actions',
+      risk_score: '8.0', platform: 'Terraform', cwe: '732',
+    },
+    {
+      severity: 'MEDIUM', query_name: 'S3 Bucket Without Versioning',
+      category: 'Storage', cloud_provider: 'AWS',
+      file: 'terraform/sample_iac.tf', line: 12,
+      resource_type: 'aws_s3_bucket', resource_name: 'my-bucket',
+      description: 'S3 bucket should have versioning enabled to protect against accidental deletion.',
+      expected_value: 'versioning.enabled should be true',
+      actual_value:   'versioning is not configured',
+      risk_score: '5.0', platform: 'Terraform', cwe: '693',
+    },
+    {
+      severity: 'LOW', query_name: 'Missing Resource Tags',
+      category: 'Best Practice', cloud_provider: 'AWS',
+      file: 'terraform/sample_iac.tf', line: 3,
+      resource_type: 'aws_instance', resource_name: 'web_server',
+      description: 'Resources should have tags for identification and cost tracking.',
+      expected_value: 'Resource should have tags defined',
+      actual_value:   'Resource has no tags',
+      risk_score: '2.0', platform: 'Terraform', cwe: '',
+    },
+    {
+      severity: 'INFO', query_name: 'Default VPC In Use',
+      category: 'Networking', cloud_provider: 'AWS',
+      file: 'terraform/sample_iac.tf', line: 20,
+      resource_type: 'aws_vpc', resource_name: 'default',
+      description: 'Default VPC should not be used in production environments.',
+      expected_value: 'Custom VPC should be used',
+      actual_value:   'Default VPC is being used',
+      risk_score: '1.0', platform: 'Terraform', cwe: '',
+    },
+  ],
+  scan_id: 'demo-scan',
+  filename: 'sample_iac.tf',
+};
