@@ -44,7 +44,7 @@ results/
 # Local env files
 .env
 .env.*
-!.env.example
+
 
 # Logs download
 logs*.zip
