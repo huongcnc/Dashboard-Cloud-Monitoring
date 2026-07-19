@@ -96,7 +96,7 @@ jobs:
           find .terraform/providers -type f -name "terraform-provider-aws_*" -exec cp {} ~/.terraform.d/plugins/linux_amd64/ \;
           mkdir -p ~/.aws
           printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > ~/.aws/credentials
-          printf "[default]\nregion = %s\n" "$AWS_REGION" > ~/.aws/config
+          printf '[default]\nregion = ${{ github.event.inputs.scan_regions || 'ap-southeast-1' }}\n' > ~/.aws/config
           aws sts get-caller-identity || echo "WARNING: AWS credentials invalid"
           terraformer import aws --resources=instance,s3,iam,ecs,ecr --regions=${{ github.event.inputs.scan_regions || 'ap-southeast-1' }} --profile=default
           find . -name "*.tf" | head -30
@@ -123,45 +123,6 @@ jobs:
       # =========================================================
       # Trich xuat container image tu KICS output
       # =========================================================
-      - name: Extract images from AWS (ECS + ECR)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ github.event.inputs.scan_regions || 'ap-southeast-1' }}
-          AWS_DEFAULT_REGION: ${{ github.event.inputs.scan_regions || 'ap-southeast-1' }}
-        run: |
-          cat <<'SCRIPT' > extract_aws_images.sh
-          #!/bin/bash
-          set +e
-          echo "=== ECS task definitions ==="
-          for td in $(aws ecs list-task-definitions --query 'taskDefinitionArns[*]' --output text 2>/dev/null); do
-            aws ecs describe-task-definition --task-definition "$td" \
-              --query 'taskDefinition.containerDefinitions[].image' --output text 2>/dev/null
-          done
-          echo "=== ECR images ==="
-          ACCOUNT=$(aws sts get-caller-identity --query 'Account' --output text 2>/dev/null)
-          for repo in $(aws ecr describe-repositories --query 'repositories[].repositoryName' --output text 2>/dev/null); do
-            for tag in $(aws ecr list-images --repository-name "$repo" --filter TAG_STATUS=TAGGED --query 'imageIdList[].imageTag' --output text 2>/dev/null); do
-              echo "${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/$repo:$tag"
-            done
-          done
-          SCRIPT
-          chmod +x extract_aws_images.sh
-          ./extract_aws_images.sh > aws-images.txt || true
-          echo "=== Images from AWS ==="
-          cat aws-images.txt
-
-          # Merge voi images tu .tf (loai NO_IMAGES_FOUND)
-          grep -v "NO_IMAGES_FOUND" trivy-targets.txt > all-targets.txt 2>/dev/null || true
-          cat aws-images.txt >> all-targets.txt
-          sort -u all-targets.txt > trivy-targets.txt
-          # Neu rong, ghi NO_IMAGES_FOUND
-          if [ ! -s trivy-targets.txt ]; then
-            echo "NO_IMAGES_FOUND" > trivy-targets.txt
-          fi
-          echo "=== Final targets ==="
-          cat trivy-targets.txt
-
       - name: Extract images from KICS results
         run: |
           cat <<'EOF' > extract_images.py
@@ -225,17 +186,7 @@ jobs:
 
       - name: Trivy - vulnerability scan images
         continue-on-error: true
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ github.event.inputs.scan_regions || 'ap-southeast-1' }}
-          AWS_DEFAULT_REGION: ${{ github.event.inputs.scan_regions || 'ap-southeast-1' }}
         run: |
-          # Login ECR de Trivy pull image private
-          ACCOUNT=$(aws sts get-caller-identity --query 'Account' --output text 2>/dev/null)
-          if [ -n "$ACCOUNT" ]; then
-            aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com" 2>/dev/null || echo "ECR login failed"
-          fi
           if grep -q "NO_IMAGES_FOUND" trivy-targets.txt; then
             echo "No images to scan, skipping image scan"
             echo '{"images": [], "message": "No container images found"}' \

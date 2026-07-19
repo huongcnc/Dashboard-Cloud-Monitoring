@@ -52,3 +52,6 @@ logs*_dir/
 
 # Node
 node_modules/
+
+# Temporary patch scripts
+patch_*.js
