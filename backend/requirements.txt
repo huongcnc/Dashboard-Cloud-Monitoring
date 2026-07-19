@@ -1,13 +1,14 @@
-# Web framework
+﻿# === Core: chay backend + ket noi pipeline (KHONG can crewai) ===
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
-
-# AI agent framework
-crewai>=0.63.0
-
-# Gemini LLM (dùng qua LiteLLM trong CrewAI)
-google-generativeai>=0.7.0
-litellm>=1.40.0
-
-# Environment variables
+httpx>=0.27.0
+pydantic>=2.0.0
+pynacl>=1.5.0
+boto3>=1.34.0
 python-dotenv>=1.0.0
+
+# === Optional: AI agent (can Python 3.10-3.13, KHONG ho tro 3.14) ===
+# Bo comment dong duoi khi cai Python 3.12/3.13
+# crewai>=0.63.0
+# google-generativeai>=0.7.0
+# litellm>=1.40.0

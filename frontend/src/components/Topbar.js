@@ -1,8 +1,13 @@
-import React, { useRef } from 'react';
+﻿import React from 'react';
 
-export default function Topbar({ onScan, loading, clock }) {
-  const fileRef = useRef();
+const SEVERITY_COLOR = {
+  queued: '#d29922',
+  in_progress: '#388bfd',
+  completed: '#3fb950',
+  failure: '#f85149',
+};
 
+export default function Topbar({ clock, scanInfo }) {
   const timeStr = clock.toLocaleTimeString('vi-VN');
   const dateStr = clock.toLocaleDateString('vi-VN', {
     weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
@@ -27,35 +32,30 @@ export default function Topbar({ onScan, loading, clock }) {
           Dashboard
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: '#8b949e' }}>
-          Theo dõi và giám sát các dịch vụ cloud
+          Cloud Security Monitoring - lien ket pipeline GitHub Actions
         </p>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Upload button */}
-        <label style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '7px 16px', borderRadius: 6,
-          background: loading ? '#1a3a20' : '#238636',
-          color: '#fff', fontSize: 13, fontWeight: 600,
-          cursor: loading ? 'not-allowed' : 'pointer',
-          border: 'none', transition: 'background 0.15s',
-          userSelect: 'none',
-        }}>
-          {loading ? '⏳ Đang quét...' : '⬆ Quét Terraform'}
-          <input
-            type="file"
-            accept=".tf,.json,.yaml,.yml,.zip"
-            ref={fileRef}
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) onScan(file);
-              e.target.value = '';
-            }}
-            disabled={loading}
-            style={{ display: 'none' }}
-          />
-        </label>
+        {/* Scan status */}
+        {scanInfo && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 8,
+            background: '#0d1117',
+            border: `1px solid ${SEVERITY_COLOR[scanInfo.status] || '#30363d'}`,
+            fontSize: 12, color: SEVERITY_COLOR[scanInfo.status] || '#8b949e',
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: SEVERITY_COLOR[scanInfo.status] || '#8b949e',
+              ...(scanInfo.status !== 'completed' ? {
+                animation: 'pulse 1.5s infinite',
+              } : {}),
+            }} />
+            {scanInfo.status === 'completed' ? 'Quet xong' : scanInfo.status}
+          </div>
+        )}
 
         {/* Clock */}
         <div style={{

@@ -1,49 +1,124 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar         from './components/Sidebar';
 import Topbar          from './components/Topbar';
+import CustomerForm    from './components/CustomerForm';
 import DashboardPage   from './pages/DashboardPage';
 import ScanPage        from './pages/ScanPage';
 import LogsPage        from './pages/LogsPage';
 import AlertsPage      from './pages/AlertsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import { SAMPLE_DATA } from './constants';
-import { scanFile }    from './utils/api';
+import {
+  setupCustomer,
+  removeCustomer,
+  triggerScan,
+  getScanStatus,
+  fetchLatestResults,
+} from './utils/api';
 
 export default function App() {
   const [page,       setPage]       = useState('dashboard');
-  const [scanResult, setScanResult] = useState(null);
+  const [scanResult, setScanResult] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('scanResult') || 'null'); } catch(e) { return null; }
+  });
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState(null);
   const [clock,      setClock]      = useState(new Date());
+  const [scanInfo,   setScanInfo]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem('scanInfo') || 'null'); } catch(e) { return null; }
+  });
 
   const data = scanResult || SAMPLE_DATA;
 
-  /* ── clock ── */
+  /* clock */
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  /* ── scan handler ── */
-  const handleScan = useCallback(async (file) => {
+  /* poll scan status khi dang chay */
+  useEffect(() => {
+    if (!scanInfo || scanInfo.status === 'completed') return;
+    const t = setInterval(async () => {
+      try {
+        const st = await getScanStatus(scanInfo.run_id);
+        setScanInfo(st);
+        if (st.status === 'completed') {
+          // doc ket qua tu S3
+          const results = await fetchLatestResults(scanInfo.customer_id);
+          if (results) {
+            setScanResult(results);
+            setPage('dashboard');
+          }
+        }
+      } catch (e) { /* ignore poll errors */ }
+    }, 10000);
+    return () => clearInterval(t);
+  }, [scanInfo]);
+
+  useEffect(() => { localStorage.setItem('scanResult', JSON.stringify(scanResult)); }, [scanResult]);
+  useEffect(() => { localStorage.setItem('scanInfo', JSON.stringify(scanInfo)); }, [scanInfo]);
+
+  /* xu ly form khach hang */
+  const handleCustomerSubmit = useCallback(async (payload) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await scanFile(file);
-      setScanResult(result);
-      setPage('dashboard');
+      if (payload.mode === 'load') {
+        const results = await fetchLatestResults(payload.customer_id);
+        if (!results) {
+          return { type: 'error', text: 'Chua co ket qua scan tren S3 cho customer nay.' };
+        }
+        setScanResult(results);
+        setPage('dashboard');
+        return { type: 'success', text: 'Da tai ket qua moi nhat: ' + (results.summary?.total || 0) + ' findings.' };
+      }
+      if (payload.mode === 'scan') {
+        const res = await triggerScan(payload.customer_id, payload.region);
+        setScanInfo({
+          run_id: res.run_id,
+          customer_id: payload.customer_id,
+          status: 'queued',
+        });
+        return { type: 'success', text: `Da bat dau quet (run #${res.run_id}). Dang cho pipeline...` };
+      }
+      const res = await setupCustomer(payload);
+      return { type: 'success', text: res.message || 'Da luu key thanh cong.' };
     } catch (err) {
       setError(err.message);
+      return { type: 'error', text: err.message };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /* ── router ── */
+  const handleCustomerRemove = useCallback(async (customerId) => {
+    setLoading(true);
+    try {
+      const res = await removeCustomer(customerId);
+      return { type: 'success', text: res.message || 'Da xoa khach.' };
+    } catch (err) {
+      return { type: 'error', text: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /* router */
   const renderPage = () => {
     switch (page) {
-      case 'dashboard': return <DashboardPage data={data} />;
-      case 'scan':      return <ScanPage      data={data} />;
+      case 'dashboard':
+        return (
+          <>
+            <CustomerForm
+              onSubmit={handleCustomerSubmit}
+              onRemove={handleCustomerRemove}
+              loading={loading}
+            />
+            <DashboardPage data={data} />
+          </>
+        );
+      case 'scan':      return <ScanPage data={data} />;
       case 'logs':      return <LogsPage />;
       case 'alerts':    return <AlertsPage />;
       default:          return <PlaceholderPage page={page} />;
@@ -56,11 +131,10 @@ export default function App() {
       <Sidebar activePage={page} onNavigate={setPage} />
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Topbar onScan={handleScan} loading={loading} clock={clock} />
+        <Topbar clock={clock} scanInfo={scanInfo} />
 
         <div style={{ flex: 1, padding: '24px 28px', overflowY: 'auto' }}>
 
-          {/* Scan error banner */}
           {error && (
             <div style={{
               background: '#3d1515', border: '1px solid #f85149',
@@ -68,24 +142,33 @@ export default function App() {
               marginBottom: 20, fontSize: 13, color: '#ffa198',
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              <span>⚠</span>
-              <span>{error} — đang hiển thị dữ liệu demo.</span>
+              <span>{error}</span>
               <button
                 onClick={() => setError(null)}
                 style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ffa198', cursor: 'pointer', fontSize: 16 }}
-              >✕</button>
+              >x</button>
             </div>
           )}
 
-          {/* Demo badge (chỉ hiện ở dashboard/scan) */}
+          {/* Scan progress badge */}
+          {scanInfo && scanInfo.status !== 'completed' && (
+            <div style={{
+              background: '#0c2d6b', border: '1px solid #1f6feb',
+              borderRadius: 8, padding: '10px 16px',
+              marginBottom: 20, fontSize: 13, color: '#79c0ff',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span>Pipeline dang chay (run #{scanInfo.run_id}) - trang thai: {scanInfo.status}...</span>
+            </div>
+          )}
+
           {!scanResult && ['dashboard', 'scan'].includes(page) && (
             <div style={{
               background: '#1c2a1c', border: '1px solid #3fb95066',
               borderRadius: 8, padding: '8px 16px',
               marginBottom: 20, fontSize: 12, color: '#3fb950',
-              display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              📊 Đang hiển thị dữ liệu demo — nhấn <strong style={{ marginLeft: 4 }}>"Quét Terraform"</strong> để tải file thực.
+              Dang hien thi du lieu demo. Nhap key khach roi bam "Quet ngay" de chay pipeline that.
             </div>
           )}
 
