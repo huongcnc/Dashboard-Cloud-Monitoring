@@ -15,7 +15,8 @@
       dockerfile: ./Dockerfile
     environment:
       NODE_ENV: production
-      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_API_URL: http://116.118.6.141:8000
+      REACT_APP_DEFAULT_CUSTOMER_ID: cust-zept
     ports:
       - "3000:3000"
     depends_on:

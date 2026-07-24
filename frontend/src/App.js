@@ -16,6 +16,8 @@ import {
   fetchLatestResults,
 } from './utils/api';
 
+const DEFAULT_CUSTOMER_ID = process.env.REACT_APP_DEFAULT_CUSTOMER_ID || 'cust-zept';
+
 export default function App() {
   const [page,       setPage]       = useState('dashboard');
   const [scanResult, setScanResult] = useState(() => {
@@ -35,6 +37,21 @@ export default function App() {
     const t = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  /* auto load latest results when dashboard opens */
+  useEffect(() => {
+    if (scanResult) return;
+    const customerId = localStorage.getItem('lastCustomerId') || DEFAULT_CUSTOMER_ID;
+    if (!customerId) return;
+    fetchLatestResults(customerId)
+      .then(results => {
+        if (results) {
+          setScanResult(results);
+          localStorage.setItem('lastCustomerId', customerId);
+        }
+      })
+      .catch(() => {});
+  }, [scanResult]);
 
   /* poll scan status khi dang chay */
   useEffect(() => {
@@ -65,6 +82,7 @@ export default function App() {
     setError(null);
     try {
       if (payload.mode === 'load') {
+        localStorage.setItem('lastCustomerId', payload.customer_id);
         const results = await fetchLatestResults(payload.customer_id);
         if (!results) {
           return { type: 'error', text: 'Chua co ket qua scan tren S3 cho customer nay.' };
@@ -74,6 +92,7 @@ export default function App() {
         return { type: 'success', text: 'Da tai ket qua moi nhat: ' + (results.summary?.total || 0) + ' findings.' };
       }
       if (payload.mode === 'scan') {
+        localStorage.setItem('lastCustomerId', payload.customer_id);
         const res = await triggerScan(payload.customer_id, payload.region);
         setScanInfo({
           run_id: res.run_id,
