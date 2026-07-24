@@ -1,10 +1,23 @@
-services:
+﻿services:
+  backend:
+    build:
+      context: backend
+      dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
   frontend:
-    image: frontend
     build:
       context: frontend
       dockerfile: ./Dockerfile
     environment:
       NODE_ENV: production
+      REACT_APP_API_URL: http://localhost:8000
     ports:
-      - 3000:3000
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
