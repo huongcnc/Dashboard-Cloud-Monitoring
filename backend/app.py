@@ -25,11 +25,11 @@ from s3_client import get_latest_results, get_latest_raw, list_history, get_hist
 
 from mock_data import get_mock_data
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
 
 def resolve_log_path(path: str) -> str:
     if not os.path.isabs(path):
-        return os.path.join(BASE_DIR, path)
+        return os.path.join(BACKEND_DIR, path)
     return path
 
 app = FastAPI(title="Cloud Monitoring Dashboard API")
