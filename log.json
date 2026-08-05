@@ -1,0 +1,79 @@
+{
+  "network_errors": [
+    {
+      "error_code": "NET-001",
+      "error_name": "DNS Tunneling Detected",
+      "severity": "High",
+      "category": "Network",
+      "description": "Unusual DNS requests indicate possible DNS tunneling used for data exfiltration or command-and-control communication.",
+      "possible_causes": [
+        "Malware infection",
+        "Command and Control (C2)",
+        "Data exfiltration"
+      ],
+      "mitre_attack": {
+        "tactic": {
+          "id": "TA0011",
+          "name": "Command and Control"
+        },
+        "technique": {
+          "id": "T1071",
+          "name": "Application Layer Protocol"
+        },
+        "sub_technique": {
+          "id": "T1071.004",
+          "name": "DNS"
+        }
+      }
+    },
+    {
+      "error_code": "NET-002",
+      "error_name": "Port Scanning Activity",
+      "severity": "Medium",
+      "category": "Network",
+      "description": "Multiple connection attempts to sequential or random ports detected, indicating possible reconnaissance.",
+      "possible_causes": [
+        "External attacker reconnaissance",
+        "Internal vulnerability scanning",
+        "Unauthorized network discovery"
+      ],
+      "mitre_attack": {
+        "tactic": {
+          "id": "TA0043",
+          "name": "Reconnaissance"
+        },
+        "technique": {
+          "id": "T1595",
+          "name": "Active Scanning"
+        },
+        "sub_technique": null
+      }
+    },
+    {
+      "error_code": "NET-003",
+      "error_name": "Suspicious SMB Lateral Movement",
+      "severity": "Critical",
+      "category": "Network",
+      "description": "SMB traffic indicates possible lateral movement between hosts using administrative shares.",
+      "possible_causes": [
+        "Compromised credentials",
+        "Pass-the-Hash attack",
+        "Remote execution tools"
+      ],
+      "mitre_attack": {
+        "tactic": {
+          "id": "TA0008",
+          "name": "Lateral Movement"
+        },
+        "technique": {
+          "id": "T1021",
+          "name": "Remote Services"
+        },
+        "sub_technique": {
+          "id": "T1021.002",
+          "name": "SMB/Windows Admin Shares"
+        }
+      }
+    }
+  ]
+}

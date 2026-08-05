@@ -89,11 +89,22 @@ export default function LogsPage() {
     if (data) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [data]);
 
-  /* enrich logs with level */
-  const enriched = (data?.logs || []).map(log => ({
-    ...log,
-    level: detectLevel(log.service || '', log.message || ''),
-  }));
+  /* enrich logs with normalized fields */
+  const enriched = (data?.logs || []).map(log => {
+    const techniqueId = log.technique_id || log.mitre_attack?.technique?.id || '';
+    const techniqueName = log.technique_name || log.mitre_attack?.technique?.name || log.service || '';
+    const errorName = log.error_name || log.error_code || log.message || '';
+    const severity = log.severity || (log.level ? log.level.toUpperCase() : '');
+
+    return {
+      ...log,
+      technique_id: techniqueId,
+      technique_name: techniqueName,
+      error_name: errorName,
+      severity,
+      level: detectLevel(log.service || '', log.message || ''),
+    };
+  });
 
   /* counts */
   const counts = enriched.reduce((acc, l) => {
@@ -106,6 +117,10 @@ export default function LogsPage() {
     const matchLevel = levelFilter === 'ALL' || log.level === levelFilter;
     const q = search.toLowerCase();
     const matchSearch = !q ||
+      log.technique_id?.toLowerCase().includes(q) ||
+      log.technique_name?.toLowerCase().includes(q) ||
+      log.error_name?.toLowerCase().includes(q) ||
+      log.severity?.toLowerCase().includes(q) ||
       log.message?.toLowerCase().includes(q) ||
       log.service?.toLowerCase().includes(q) ||
       log.host?.toLowerCase().includes(q);
@@ -221,7 +236,7 @@ export default function LogsPage() {
         {/* Table header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '160px 60px 130px 90px 1fr',
+          gridTemplateColumns: '180px 260px 1fr 120px',
           gap: 0,
           padding: '8px 16px',
           background: '#0d1117',
@@ -229,11 +244,10 @@ export default function LogsPage() {
           fontSize: 11, fontWeight: 700, color: '#8b949e',
           textTransform: 'uppercase', letterSpacing: '0.06em',
         }}>
-          <span>Timestamp</span>
-          <span>Level</span>
-          <span>Service</span>
-          <span>PID</span>
-          <span>Message</span>
+          <span>Technique ID</span>
+          <span>Technique Name</span>
+          <span>Error Name</span>
+          <span>Severity</span>
         </div>
 
         {/* Rows */}
@@ -259,11 +273,10 @@ export default function LogsPage() {
           )}
 
           {filtered.map((log, i) => {
-            const s = LEVEL_STYLE[log.level] || LEVEL_STYLE.debug;
             return (
               <div key={i} style={{
                 display: 'grid',
-                gridTemplateColumns: '160px 60px 130px 90px 1fr',
+                gridTemplateColumns: '180px 260px 1fr 120px',
                 gap: 0,
                 padding: '6px 16px',
                 borderBottom: '1px solid #21262d',
@@ -273,15 +286,14 @@ export default function LogsPage() {
                 onMouseEnter={e => e.currentTarget.style.background = '#1f6feb14'}
                 onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0d111780'}
               >
-                <span style={{ color: '#8b949e', fontSize: 11 }}>{log.timestamp}</span>
-                <span><LevelBadge level={log.level} /></span>
+                <span style={{ color: '#8b949e', fontSize: 11 }}>{log.technique_id || '—'}</span>
                 <span style={{ color: '#d2a8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {log.service}
+                  {log.technique_name || '—'}
                 </span>
-                <span style={{ color: '#8b949e' }}>{log.pid || '—'}</span>
-                <span style={{ color: s.color, wordBreak: 'break-word', lineHeight: 1.5 }}>
-                  {log.message}
+                <span style={{ color: '#e6edf3', wordBreak: 'break-word', lineHeight: 1.5 }}>
+                  {log.error_name || '—'}
                 </span>
+                <span style={{ color: '#8b949e', textTransform: 'capitalize' }}>{log.severity || '—'}</span>
               </div>
             );
           })}

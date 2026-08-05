@@ -66,13 +66,40 @@ async def health():
 @app.get("/logs")
 async def get_logs():
     log_path = os.getenv("LOG_PATH", "log/sys.log")
+    if log_path == "log/sys.log" and os.path.exists("log.json"):
+        log_path = "log.json"
+
     try:
         with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            if log_path.lower().endswith(".json"):
+                payload = json.load(f)
+                logs = payload.get("network_errors") or payload.get("logs") or payload
+                if isinstance(logs, dict):
+                    logs = [logs]
+
+                normalized = []
+                if isinstance(logs, list):
+                    for item in logs:
+                        if not isinstance(item, dict):
+                            continue
+                        technique = (item.get("mitre_attack") or {}).get("technique") or {}
+                        normalized.append({
+                            "technique_id": technique.get("id"),
+                            "technique_name": technique.get("name"),
+                            "error_name": item.get("error_name"),
+                            "severity": item.get("severity"),
+                            "category": item.get("category"),
+                            "description": item.get("description"),
+                        })
+                return {"total": len(normalized), "logs": normalized, "source": log_path}
+
             from collections import deque
             lines = list(deque(f, maxlen=100))
-        return {"total": len(lines), "logs": parse_syslog(lines)}
+        return {"total": len(lines), "logs": parse_syslog(lines), "source": log_path}
     except FileNotFoundError:
         return {"total": 0, "logs": [], "error": "No log file found"}
+    except json.JSONDecodeError:
+        return {"total": 0, "logs": [], "error": "Invalid JSON log file"}
 
 
 @app.get("/api/alerts")
