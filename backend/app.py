@@ -25,6 +25,13 @@ from s3_client import get_latest_results, get_latest_raw, list_history, get_hist
 
 from mock_data import get_mock_data
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+def resolve_log_path(path: str) -> str:
+    if not os.path.isabs(path):
+        return os.path.join(BASE_DIR, path)
+    return path
+
 app = FastAPI(title="Cloud Monitoring Dashboard API")
 
 app.add_middleware(
@@ -66,12 +73,15 @@ async def health():
 @app.get("/logs")
 async def get_logs():
     log_path = os.getenv("LOG_PATH", "log/sys.log")
-    if log_path == "log/sys.log" and os.path.exists("log.json"):
-        log_path = "log.json"
+    resolved_path = resolve_log_path(log_path)
+    if log_path == "log/sys.log":
+        json_path = resolve_log_path("log.json")
+        if os.path.exists(json_path):
+            resolved_path = json_path
 
     try:
-        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-            if log_path.lower().endswith(".json"):
+        with open(resolved_path, "r", encoding="utf-8", errors="ignore") as f:
+            if resolved_path.lower().endswith(".json"):
                 payload = json.load(f)
                 logs = payload.get("network_errors") or payload.get("logs") or payload
                 if isinstance(logs, dict):
