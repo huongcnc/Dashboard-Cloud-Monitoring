@@ -68,6 +68,26 @@ export async function fetchLatestResults(customer_id) {
   return res.json();
 }
 
+export async function analyzeResults(customer_id) {
+  const res = await fetch(`${BASE_URL}/api/results/${encodeURIComponent(customer_id)}/analyze`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Server error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+export async function getAnalysis(analysis_id) {
+  const res = await fetch(`${BASE_URL}/api/analysis/${encodeURIComponent(analysis_id)}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Server error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
 export async function fetchHistory(customer_id) {
   const res = await fetch(`${BASE_URL}/api/results/${customer_id}/history`);
   if (!res.ok) throw new Error(`Server error ${res.status}`);

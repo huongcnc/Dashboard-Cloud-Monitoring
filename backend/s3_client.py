@@ -3,10 +3,15 @@ S3 client: doc ket qua scan theo folder khach hang.
 """
 import os
 import json
+import zipfile
+from io import BytesIO
 from typing import Optional
 
 import boto3
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 S3_BUCKET = os.getenv("S3_BUCKET", "scanning-result-bucket")
@@ -53,6 +58,46 @@ def get_latest_raw(customer_id: str, kind: str) -> Optional[dict]:
         if e.response["Error"]["Code"] == "NoSuchKey":
             return None
         raise
+
+def get_latest_terraform(customer_id: str) -> dict[str, str]:
+    """Read optional Terraform output without changing the existing scan pipeline."""
+    client = _session.client("s3")
+    files: dict[str, str] = {}
+    prefixes = [
+        _key(customer_id, "latest", "iac", ""),
+        _key(customer_id, "latest", "terraform", ""),
+    ]
+
+    for prefix in prefixes:
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix):
+            for item in page.get("Contents", []):
+                key = item["Key"]
+                if not key.endswith(".tf"):
+                    continue
+                obj = client.get_object(Bucket=S3_BUCKET, Key=key)
+                files[key[len(prefix):]] = obj["Body"].read().decode("utf-8", errors="ignore")
+
+    if files:
+        return dict(sorted(files.items()))
+
+    zip_prefix = _key(customer_id, "latest", "")
+    zip_candidates = []
+    paginator = client.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=zip_prefix):
+        for item in page.get("Contents", []):
+            name = item["Key"].rsplit("/", 1)[-1].lower()
+            if name in {"iac.zip", "terraform.zip", "tf.zip"}:
+                zip_candidates.append(item["Key"])
+
+    for key in zip_candidates:
+        obj = client.get_object(Bucket=S3_BUCKET, Key=key)
+        with zipfile.ZipFile(BytesIO(obj["Body"].read())) as archive:
+            for name in archive.namelist():
+                if name.endswith(".tf"):
+                    files[name] = archive.read(name).decode("utf-8", errors="ignore")
+
+    return dict(sorted(files.items()))
 
 
 def list_history(customer_id: str) -> list[dict]:
