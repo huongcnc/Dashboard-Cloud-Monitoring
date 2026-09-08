@@ -1,14 +1,14 @@
 ﻿const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // === Logs & Alerts (cu) ===
-export async function fetchLogs() {
-  const res = await fetch(`${BASE_URL}/logs`);
+export async function fetchLogs(page = 1, pageSize = 50, query = '') {
+  const res = await fetch(`${BASE_URL}/logs?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error(`Server error ${res.status}`);
   return res.json();
 }
 
-export async function fetchAlerts() {
-  const res = await fetch(`${BASE_URL}/api/alerts`);
+export async function fetchAlerts(page = 1, pageSize = 50, query = '') {
+  const res = await fetch(`${BASE_URL}/api/alerts?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error(`Server error ${res.status}`);
   return res.json();
 }

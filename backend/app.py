@@ -1,6 +1,6 @@
 ﻿import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -24,6 +24,7 @@ from github_client import (
 from s3_client import get_latest_results, get_latest_raw, list_history, get_history_results
 
 from mock_data import get_mock_data
+from elk_client import fetch_alerts, fetch_logs
 
 BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -34,9 +35,11 @@ def resolve_log_path(path: str) -> str:
 
 app = FastAPI(title="Cloud Monitoring Dashboard API")
 
+cors_origins = [item.strip() for item in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if item.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,61 +71,22 @@ async def health():
 
 
 # =========================================================
-# Logs (giu nguyen endpoint cu, doc syslog local)
+# Logs (giu nguyen endpoint cu, doc live data tu Elasticsearch)
 # =========================================================
 @app.get("/logs")
-async def get_logs():
-    log_path = os.getenv("LOG_PATH", "log/sys.log")
-    resolved_path = resolve_log_path(log_path)
-    if log_path == "log/sys.log":
-        json_path = resolve_log_path("log.json")
-        if os.path.exists(json_path):
-            resolved_path = json_path
-
+async def get_logs(page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), q: str = Query("", max_length=200)):
     try:
-        with open(resolved_path, "r", encoding="utf-8", errors="ignore") as f:
-            if resolved_path.lower().endswith(".json"):
-                payload = json.load(f)
-                logs = payload.get("network_errors") or payload.get("logs") or payload
-                if isinstance(logs, dict):
-                    logs = [logs]
-
-                normalized = []
-                if isinstance(logs, list):
-                    for item in logs:
-                        if not isinstance(item, dict):
-                            continue
-                        technique = (item.get("mitre_attack") or {}).get("technique") or {}
-                        normalized.append({
-                            "technique_id": technique.get("id"),
-                            "technique_name": technique.get("name"),
-                            "error_name": item.get("error_name"),
-                            "severity": item.get("severity"),
-                            "category": item.get("category"),
-                            "description": item.get("description"),
-                        })
-                return {"total": len(normalized), "logs": normalized, "source": log_path}
-
-            from collections import deque
-            lines = list(deque(f, maxlen=100))
-        return {"total": len(lines), "logs": parse_syslog(lines), "source": log_path}
-    except FileNotFoundError:
-        return {"total": 0, "logs": [], "error": "No log file found"}
-    except json.JSONDecodeError:
-        return {"total": 0, "logs": [], "error": "Invalid JSON log file"}
+        return await fetch_logs(page=page, page_size=page_size, query=q)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Elasticsearch logs unavailable: {exc}")
 
 
 @app.get("/api/alerts")
-async def get_alerts():
-    log_path = os.getenv("LOG_PATH", "log/sys.log")
+async def get_alerts(page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), q: str = Query("", max_length=200)):
     try:
-        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-            from collections import deque
-            logs = "".join(list(deque(f, maxlen=100)))
-        result = await analyze_logs(logs)
-        return result
-    except FileNotFoundError:
-        return {"alerts": [], "error": "No log file found"}
+        return await fetch_alerts(page=page, page_size=page_size, query=q)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Elasticsearch alerts unavailable: {exc}")
 
 
 # =========================================================

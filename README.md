@@ -45,8 +45,13 @@ S3_REGION=ap-southeast-1
 S3_READ_ACCESS_KEY_ID=
 S3_READ_SECRET_ACCESS_KEY=
 
-# Log path (cho endpoint /logs cu)
-LOG_PATH=log/sys.log
+# Elasticsearch / ELK live data
+ELASTICSEARCH_URL=https://192.168.48.10:9200
+ELASTICSEARCH_USERNAME=elastic
+ELASTICSEARCH_PASSWORD=your_elasticsearch_password
+ELASTICSEARCH_VERIFY_TLS=false
+ELASTIC_LOG_INDEX=filebeat-*
+ELASTIC_ALERT_INDEX=.alerts-security.alerts-default
 
 ```
 
