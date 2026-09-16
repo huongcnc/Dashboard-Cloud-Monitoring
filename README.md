@@ -79,12 +79,14 @@ curl http://localhost:8000/api/analysis/<analysis_id>
 Cấu hình model:
 
 ```bash
-GEMINI_MODEL=models/gemini-3.6-flash
-GEMINI_FALLBACK_MODEL=models/gemini-2.5-flash
+GEMINI_MODEL=models/gemini-3.5-flash
+GEMINI_FALLBACK_MODEL=models/gemini-3.5-flash-lite
 GEMINI_MAX_INPUT_CHARS=120000
 ```
 
 Pipeline đóng gói các file `.tf` sinh từ Terraformer thành `iac.zip`, upload vào `latest/iac.zip` và thư mục history tương ứng. Backend tự đọc file này để phân tích ngữ cảnh hạ tầng. Nếu chưa có Terraform, backend vẫn phân tích từ KICS/Trivy và trả warning để người dùng biết giới hạn phân tích.
+
+> Khi pipeline chạy bằng branch `test`, backend có thể gọi `POST /api/results/{customer_id}/analyze` sau khi GitHub Actions hoàn tất.
 
 ---
 

@@ -16,11 +16,11 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 from s3_client import get_latest_raw, get_latest_results, get_latest_terraform
 
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-3.6-flash")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "models/gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-3.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "models/gemini-3.5-flash-lite")
 GEMINI_TIMEOUT = float(os.getenv("GEMINI_TIMEOUT", "120"))
 MAX_INPUT_CHARS = int(os.getenv("GEMINI_MAX_INPUT_CHARS", "120000"))
 STORE_DIR = Path(os.getenv("ANALYSIS_STORE_DIR", "analysis_results"))
@@ -450,7 +450,7 @@ async def call_gemini(context: dict[str, Any]) -> tuple[str, str]:
             last_error = exc
             response = getattr(exc, "response", None)
             status_code = response.status_code if response is not None else None
-            if status_code not in {400, 404}:
+            if status_code not in {400, 404, 429, 500, 502, 503, 504}:
                 break
 
     raise RuntimeError(f"Gemini request failed: {last_error}")

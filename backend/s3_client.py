@@ -5,13 +5,14 @@ import os
 import json
 import zipfile
 from io import BytesIO
+from pathlib import Path
 from typing import Optional
 
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 
 S3_BUCKET = os.getenv("S3_BUCKET", "scanning-result-bucket")
