@@ -8,12 +8,13 @@ GitHub Actions API client.
 import os
 import asyncio
 import base64
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
 from nacl import encoding, public
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 logger_name = __name__
 import logging

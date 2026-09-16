@@ -16,6 +16,7 @@ export const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',        icon: '⊞' },
   { id: 'resources',  label: 'Tài nguyên',        icon: '◈' },
   { id: 'scan',       label: 'Quét & Lỗ hổng',   icon: '⬡' },
+  { id: 'analysis',   label: 'AI Phân tích',      icon: '✦' },
   { id: 'alerts',     label: 'Cảnh báo',          icon: '⚠' },
   { id: 'reports',    label: 'Báo cáo',           icon: '⊟' },
   { id: 'logs',       label: 'Logs',              icon: '≡' },

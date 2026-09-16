@@ -1,6 +1,6 @@
 ﻿import os
 import json
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -22,6 +22,7 @@ from github_client import (
     delete_environment,
 )
 from s3_client import get_latest_results, get_latest_raw, list_history, get_history_results
+from analysis_service import get_analysis, normalize_customer_id, run_analysis_job, start_analysis
 
 from mock_data import get_mock_data
 from elk_client import fetch_alerts, fetch_logs
@@ -161,6 +162,31 @@ async def scan_status(run_id: int):
         return await get_run_status(run_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =========================================================
+# AI infrastructure analysis: chay ngoai pipeline, doc ket qua S3
+# =========================================================
+@app.post("/api/results/{customer_id}/analyze")
+async def analyze_results(customer_id: str, background_tasks: BackgroundTasks):
+    """Queue a Gemini-powered correlation analysis outside the scan pipeline."""
+    env = normalize_customer_id(customer_id)
+    try:
+        job = await start_analysis(env)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    background_tasks.add_task(run_analysis_job, job["analysis_id"], env)
+    return job
+
+
+@app.get("/api/analysis/{analysis_id}")
+async def analysis_status(analysis_id: str):
+    """Poll an infrastructure analysis job."""
+    job = get_analysis(analysis_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Analysis job not found.")
+    return job
 
 
 # =========================================================

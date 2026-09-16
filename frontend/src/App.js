@@ -4,6 +4,7 @@ import Topbar          from './components/Topbar';
 import CustomerForm    from './components/CustomerForm';
 import DashboardPage   from './pages/DashboardPage';
 import ScanPage        from './pages/ScanPage';
+import AnalysisPage    from './pages/AnalysisPage';
 import LogsPage        from './pages/LogsPage';
 import AlertsPage      from './pages/AlertsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -138,6 +139,7 @@ export default function App() {
           </>
         );
       case 'scan':      return <ScanPage data={data} />;
+      case 'analysis':  return <AnalysisPage data={data} />;
       case 'logs':      return <LogsPage />;
       case 'alerts':    return <AlertsPage />;
       default:          return <PlaceholderPage page={page} />;
