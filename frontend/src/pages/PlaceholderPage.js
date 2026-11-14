@@ -21,16 +21,16 @@ const PAGE_ICONS = {
 export default function PlaceholderPage({ page }) {
   return (
     <div style={{
-      background: '#161b22', border: '1px solid #30363d',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 12, padding: '64px 24px', textAlign: 'center',
     }}>
       <div style={{ fontSize: 52, marginBottom: 16 }}>
         {PAGE_ICONS[page] || '🚧'}
       </div>
-      <div style={{ fontSize: 18, fontWeight: 600, color: '#e6edf3', marginBottom: 8 }}>
+      <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
         {PAGE_LABELS[page] || page}
       </div>
-      <div style={{ fontSize: 14, color: '#8b949e' }}>
+      <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
         Tính năng đang được phát triển.
       </div>
     </div>

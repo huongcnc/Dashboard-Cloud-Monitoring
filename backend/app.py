@@ -21,7 +21,19 @@ from github_client import (
     delete_env_secret,
     delete_environment,
 )
-from s3_client import get_latest_results, get_latest_raw, list_history, get_history_results
+from s3_client import (
+    get_latest_results,
+    get_latest_raw,
+    get_latest_iac_zip,
+    list_history,
+    get_history_results,
+)
+from ai_analysis import (
+    AIModelError,
+    ai_configured,
+    ai_models,
+    analyze_scan_results,
+)
 
 from mock_data import get_mock_data
 from elk_client import fetch_alerts, fetch_logs
@@ -59,7 +71,7 @@ class CustomerSetup(BaseModel):
 
 class ScanTrigger(BaseModel):
     customer_id: str
-    scan_regions: str = "ap-southeast-1"
+    scan_regions: str = "auto"  # auto = pipeline tu do region co tai nguyen
 
 
 # =========================================================
@@ -211,3 +223,72 @@ async def results_history_detail(customer_id: str, timestamp: str):
     if data is None:
         raise HTTPException(status_code=404, detail="No results for this timestamp.")
     return data
+
+
+# =========================================================
+# AI (Tang 2): doc ket qua tu S3 -> Gemini -> tong quan + khuyen nghi
+# =========================================================
+@app.get("/api/ai/status")
+async def ai_status():
+    return {
+        "provider": "gemini",
+        "configured": ai_configured(),
+        "models": ai_models(),
+    }
+
+
+@app.post("/api/ai/analyze/{customer_id}")
+async def ai_analyze(customer_id: str, force: bool = Query(False)):
+    """
+    Doc merged-results.json + iac.zip tu S3, goi Gemini de:
+      1. Tong quan lo hong theo nhom (so lieu do backend tinh)
+      2. Gom remediation thanh khuyen nghi co thu tu uu tien
+    Ket qua duoc cache theo lan quet; ?force=true de phan tich lai.
+    """
+    env = customer_id.strip().lower()
+    if not env.startswith("cust-"):
+        env = f"cust-{env}"
+
+    if not ai_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="GEMINI_API_KEY chua duoc cau hinh trong backend/.env",
+        )
+
+    try:
+        data = get_latest_results(env)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Khong doc duoc ket qua tu S3: {exc}")
+
+    if data is None:
+        raise HTTPException(status_code=404, detail="No results found for this customer yet.")
+
+    # Lay du 3 file quet nhu dashboard dang hien thi. Moi file con thieu
+    # chi lam giam ngu canh, khong chan phan tich.
+    iac_zip = None
+    raw_kics = None
+    raw_trivy = None
+    try:
+        iac_zip = get_latest_iac_zip(env)
+    except Exception:
+        iac_zip = None
+    try:
+        raw_kics = get_latest_raw(env, "kics")
+    except Exception:
+        raw_kics = None
+    try:
+        raw_trivy = get_latest_raw(env, "trivy")
+    except Exception:
+        raw_trivy = None
+
+    try:
+        return await analyze_scan_results(
+            env,
+            data,
+            iac_zip=iac_zip,
+            raw_kics=raw_kics,
+            raw_trivy=raw_trivy,
+            force=force,
+        )
+    except AIModelError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))

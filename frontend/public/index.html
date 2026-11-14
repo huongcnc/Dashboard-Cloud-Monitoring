@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0d1117" />
   <title>CloudGuard Monitor</title>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
   <style>
     *,
     *::before,
@@ -26,6 +36,12 @@
       color: #e6edf3;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    html[data-theme='light'] body {
+      background: #f6f8fa;
+      color: #1f2328;
     }
 
     ::-webkit-scrollbar {
@@ -44,6 +60,14 @@
 
     ::-webkit-scrollbar-thumb:hover {
       background: #484f58;
+    }
+
+    html[data-theme='light'] ::-webkit-scrollbar-track {
+      background: #f6f8fa;
+    }
+
+    html[data-theme='light'] ::-webkit-scrollbar-thumb {
+      background: #d0d7de;
     }
   </style>
 </head>

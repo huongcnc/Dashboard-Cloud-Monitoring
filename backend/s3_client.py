@@ -55,6 +55,21 @@ def get_latest_raw(customer_id: str, kind: str) -> Optional[dict]:
         raise
 
 
+def get_latest_iac_zip(customer_id: str) -> Optional[bytes]:
+    """Doc iac.zip (ma Terraform goc) cua lan quet moi nhat."""
+    client = _session.client("s3")
+    try:
+        r = client.get_object(
+            Bucket=S3_BUCKET,
+            Key=_key(customer_id, "latest", "iac.zip"),
+        )
+        return r["Body"].read()
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            return None
+        raise
+
+
 def list_history(customer_id: str) -> list[dict]:
     """Liet ke cac lan scan trong history/."""
     client = _session.client("s3")

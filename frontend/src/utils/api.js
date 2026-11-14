@@ -39,7 +39,7 @@ export async function removeCustomer(customer_id) {
 }
 
 // === Scan trigger: goi pipeline ===
-export async function triggerScan(customer_id, scan_regions = 'ap-southeast-1') {
+export async function triggerScan(customer_id, scan_regions = 'auto') {
   const res = await fetch(`${BASE_URL}/api/scan/trigger`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,6 +71,37 @@ export async function fetchLatestResults(customer_id) {
 export async function fetchHistory(customer_id) {
   const res = await fetch(`${BASE_URL}/api/results/${customer_id}/history`);
   if (!res.ok) throw new Error(`Server error ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistoryDetail(customer_id, timestamp) {
+  const res = await fetch(`${BASE_URL}/api/results/${customer_id}/history/${encodeURIComponent(timestamp)}`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`Server error ${res.status}`);
+  }
+  return res.json();
+}
+
+// === AI (Tang 2): tong quan + khuyen nghi ===
+export async function getAIStatus() {
+  const res = await fetch(`${BASE_URL}/api/ai/status`);
+  if (!res.ok) throw new Error(`Server error ${res.status}`);
+  return res.json();
+}
+
+export async function analyzeWithAI(customer_id, force = false) {
+  const res = await fetch(`${BASE_URL}/api/ai/analyze/${customer_id}?force=${force ? 'true' : 'false'}`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    let detail = `Server error ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch (e) { /* ignore */ }
+    throw new Error(detail);
+  }
   return res.json();
 }
 

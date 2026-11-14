@@ -4,13 +4,14 @@ import {
 } from 'recharts';
 import { SEVERITY_CONFIG, CLOUD_COLORS } from '../constants';
 import SeverityBadge from '../components/SeverityBadge';
+import ScanHistory from '../components/ScanHistory';
 
 /* ── helpers ── */
 function Card({ children, style }) {
   return (
     <div style={{
-      background: '#161b22',
-      border: '1px solid #30363d',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       padding: '20px 24px',
       ...style,
@@ -23,7 +24,7 @@ function Card({ children, style }) {
 function SectionLabel({ children }) {
   return (
     <div style={{
-      fontSize: 11, color: '#8b949e', fontWeight: 700,
+      fontSize: 11, color: 'var(--text-muted)', fontWeight: 700,
       textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 14,
     }}>
       {children}
@@ -34,9 +35,9 @@ function SectionLabel({ children }) {
 function InfoRow({ label, value, mono, success }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
-      <span style={{ color: '#8b949e' }}>{label}</span>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
       <span style={{
-        color: success ? '#3fb950' : '#e6edf3',
+        color: success ? 'var(--success)' : 'var(--text)',
         fontFamily: mono ? 'monospace' : 'inherit',
         fontSize: mono ? 11 : 13,
         fontWeight: 500,
@@ -47,7 +48,7 @@ function InfoRow({ label, value, mono, success }) {
   );
 }
 
-const CATEGORY_COLORS = ['#388bfd', '#3fb950', '#ffa657', '#f78166', '#d2a8ff'];
+const CATEGORY_COLORS = ['var(--accent)', 'var(--success)', '#ffa657', '#f78166', 'var(--purple-text)'];
 
 const CLOUD_ICONS = { AWS: '☁', Azure: '△', GCP: '◐' };
 
@@ -66,9 +67,13 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
 }
 
 /* ── main component ── */
-export default function DashboardPage({ data }) {
+export default function DashboardPage({ data, customerId, onSelectHistory }) {
   const s = data.summary;
   const total = s.total || 1;
+  const scannedAt = s.scan_end || data.scanned_at;
+  const scanLabel = scannedAt && !Number.isNaN(new Date(scannedAt).getTime())
+    ? `Quét lúc ${new Date(scannedAt).toLocaleString('vi-VN')}`
+    : 'Số liệu lấy trực tiếp từ kết quả quét';
 
   const pieData = [
     { name: 'Critical', value: s.critical, color: SEVERITY_CONFIG.CRITICAL.color },
@@ -87,6 +92,8 @@ export default function DashboardPage({ data }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+      <ScanHistory customerId={customerId} onSelect={onSelectHistory} />
+
       {/* ── Row 1 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 16 }}>
 
@@ -96,11 +103,10 @@ export default function DashboardPage({ data }) {
             <SectionLabel>Tổng số lỗ hổng</SectionLabel>
             <span style={{ fontSize: 22 }}>🛡</span>
           </div>
-          <div style={{ fontSize: 56, fontWeight: 800, color: '#f85149', lineHeight: 1 }}>{s.total}</div>
-          <div style={{ fontSize: 13, color: '#8b949e', marginTop: 8 }}>lỗ hổng được phát hiện</div>
-          <div style={{ marginTop: 12, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: '#f85149', fontWeight: 600 }}>↑ 18%</span>
-            <span style={{ color: '#8b949e' }}>so với 7 ngày trước</span>
+          <div style={{ fontSize: 56, fontWeight: 800, color: 'var(--danger)', lineHeight: 1 }}>{s.total}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>lỗ hổng được phát hiện</div>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+            {scanLabel}
           </div>
         </Card>
 
@@ -125,8 +131,8 @@ export default function DashboardPage({ data }) {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: '#1c2128', border: '1px solid #30363d', borderRadius: 8, fontSize: 12 }}
-                    itemStyle={{ color: '#e6edf3' }}
+                    contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                    itemStyle={{ color: 'var(--text)' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -147,11 +153,11 @@ export default function DashboardPage({ data }) {
                   <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 10, height: 10, borderRadius: '50%', background: cfg.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#8b949e' }}>{cfg.label}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{cfg.label}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: cfg.color }}>{val}</span>
-                      <span style={{ fontSize: 11, color: '#8b949e' }}>({pct}%)</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: cfg.text }}>{val}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>({pct}%)</span>
                     </div>
                   </div>
                 );
@@ -178,7 +184,7 @@ export default function DashboardPage({ data }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
           {cloudData.length > 0 ? cloudData.map((c, i) => (
             <div key={i} style={{
-              background: '#0d1117', border: '1px solid #30363d',
+              background: 'var(--bg)', border: '1px solid var(--border)',
               borderRadius: 8, padding: '14px 18px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -190,13 +196,13 @@ export default function DashboardPage({ data }) {
                 }}>
                   {CLOUD_ICONS[c.provider] || '◈'}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#e6edf3' }}>{c.provider}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.provider}</span>
               </div>
               <div style={{ fontSize: 30, fontWeight: 800, color: c.color }}>{c.count}</div>
-              <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>lỗ hổng</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>lỗ hổng</div>
             </div>
           )) : (
-            <div style={{ color: '#8b949e', fontSize: 13 }}>Không có dữ liệu.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Không có dữ liệu.</div>
           )}
         </div>
       </Card>
@@ -211,10 +217,10 @@ export default function DashboardPage({ data }) {
             {(data.top_categories || []).map((cat, i) => (
               <div key={i}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
-                  <span style={{ color: '#c9d1d9' }}>{cat.name}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{cat.name}</span>
                   <span style={{ color: CATEGORY_COLORS[i % CATEGORY_COLORS.length], fontWeight: 700 }}>{cat.count}</span>
                 </div>
-                <div style={{ height: 5, background: '#21262d', borderRadius: 3 }}>
+                <div style={{ height: 5, background: 'var(--surface-2)', borderRadius: 3 }}>
                   <div style={{
                     width: `${(cat.count / maxCat) * 100}%`,
                     height: '100%',
@@ -236,22 +242,22 @@ export default function DashboardPage({ data }) {
               <div key={i} style={{
                 display: 'flex', alignItems: 'flex-start', gap: 10,
                 padding: '10px 12px',
-                background: '#0d1117', borderRadius: 8,
-                border: '1px solid #21262d',
+                background: 'var(--bg)', borderRadius: 8,
+                border: '1px solid var(--surface-2)',
               }}>
                 <SeverityBadge severity={f.severity} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: 13, fontWeight: 500, color: '#e6edf3',
+                    fontSize: 13, fontWeight: 500, color: 'var(--text)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {f.query_name}
                   </div>
-                  <div style={{ fontSize: 11, color: '#8b949e', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     {f.file} · dòng {f.line}
                   </div>
                 </div>
-                <span style={{ fontSize: 11, color: '#8b949e', flexShrink: 0 }}>{f.cloud_provider}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{f.cloud_provider}</span>
               </div>
             ))}
           </div>

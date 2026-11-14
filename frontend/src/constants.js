@@ -1,10 +1,10 @@
 export const SEVERITY_CONFIG = {
-  CRITICAL: { color: '#E24B4A', bg: '#3d1515', border: '#6a1f1e', label: 'Critical' },
-  HIGH:     { color: '#EF9F27', bg: '#2d1f06', border: '#5a3d0a', label: 'High'     },
-  MEDIUM:   { color: '#639922', bg: '#1a2a0a', border: '#3a5514', label: 'Medium'   },
-  LOW:      { color: '#1D9E75', bg: '#0a2a1e', border: '#0f5038', label: 'Low'      },
-  INFO:     { color: '#378ADD', bg: '#0c1e36', border: '#1a3d6b', label: 'Info'     },
-  TRACE:    { color: '#888780', bg: '#1a1a18', border: '#333330', label: 'Trace'    },
+  CRITICAL: { color: '#E24B4A', text: 'var(--sev-critical-text)', bg: 'var(--sev-critical-bg)', border: 'var(--sev-critical-border)', label: 'Critical' },
+  HIGH:     { color: '#EF9F27', text: 'var(--sev-high-text)',     bg: 'var(--sev-high-bg)',     border: 'var(--sev-high-border)',     label: 'High'     },
+  MEDIUM:   { color: '#639922', text: 'var(--sev-medium-text)',   bg: 'var(--sev-medium-bg)',   border: 'var(--sev-medium-border)',   label: 'Medium'   },
+  LOW:      { color: '#1D9E75', text: 'var(--sev-low-text)',      bg: 'var(--sev-low-bg)',      border: 'var(--sev-low-border)',      label: 'Low'      },
+  INFO:     { color: '#378ADD', text: 'var(--sev-info-text)',     bg: 'var(--sev-info-bg)',     border: 'var(--sev-info-border)',     label: 'Info'     },
+  TRACE:    { color: '#888780', text: 'var(--sev-trace-text)',    bg: 'var(--sev-trace-bg)',    border: 'var(--sev-trace-border)',    label: 'Trace'    },
 };
 
 export const CLOUD_COLORS = [
@@ -14,7 +14,7 @@ export const CLOUD_COLORS = [
 
 export const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',        icon: '⊞' },
-  { id: 'resources',  label: 'Tài nguyên',        icon: '◈' },
+  { id: 'ai',         label: 'Phân tích AI',     icon: '◈' },
   { id: 'scan',       label: 'Quét & Lỗ hổng',   icon: '⬡' },
   { id: 'alerts',     label: 'Cảnh báo',          icon: '⚠' },
   { id: 'reports',    label: 'Báo cáo',           icon: '⊟' },

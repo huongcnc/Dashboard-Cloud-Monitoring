@@ -4,9 +4,9 @@ const inputStyle = {
   width: '100%',
   padding: '8px 12px',
   borderRadius: 6,
-  border: '1px solid #30363d',
-  background: '#0d1117',
-  color: '#e6edf3',
+  border: '1px solid var(--border)',
+  background: 'var(--bg)',
+  color: 'var(--text)',
   fontSize: 13,
   outline: 'none',
   boxSizing: 'border-box',
@@ -15,7 +15,7 @@ const inputStyle = {
 const labelStyle = {
   display: 'block',
   fontSize: 11,
-  color: '#8b949e',
+  color: 'var(--text-muted)',
   marginBottom: 4,
   fontWeight: 600,
 };
@@ -24,7 +24,7 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
   const [customerId, setCustomerId] = useState('');
   const [accessKey, setAccessKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
-  const [region, setRegion] = useState('ap-southeast-1');
+  const [region, setRegion] = useState('auto'); // auto = pipeline tu do region
   const [schedule, setSchedule] = useState('daily');
   const [mode, setMode] = useState(null); // 'setup' | 'scan' | 'remove'
   const [msg, setMsg] = useState(null);
@@ -71,13 +71,13 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
 
   return (
     <div style={{
-      background: '#161b22',
-      border: '1px solid #30363d',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       padding: '24px',
       marginBottom: 20,
     }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 16 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
         Ket noi AWS Customer
       </div>
 
@@ -95,9 +95,9 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
             style={{
               padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600,
               cursor: 'pointer',
-              background: mode === m.id ? '#1f6feb' : '#21262d',
-              color: mode === m.id ? '#fff' : '#8b949e',
-              border: `1px solid ${mode === m.id ? '#1f6feb' : '#30363d'}`,
+              background: mode === m.id ? 'var(--accent-strong)' : 'var(--surface-2)',
+              color: mode === m.id ? '#fff' : 'var(--text-muted)',
+              border: `1px solid ${mode === m.id ? 'var(--accent-strong)' : 'var(--border)'}`,
             }}
           >
             {m.label}
@@ -140,10 +140,11 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Region</label>
+                  <label style={labelStyle}>Region (auto = tu dong do)</label>
                   <input
                     style={inputStyle}
                     value={region}
+                    placeholder="auto hoac us-east-1,ap-southeast-1"
                     onChange={e => setRegion(e.target.value)}
                   />
                 </div>
@@ -168,7 +169,7 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
             style={{
               padding: '9px 20px', borderRadius: 6, fontSize: 13, fontWeight: 700,
               cursor: loading ? 'not-allowed' : 'pointer',
-              background: loading ? '#1a3a20' : (mode === 'remove' ? '#da3633' : '#238636'),
+              background: loading ? 'var(--success-bg)' : (mode === 'remove' ? 'var(--danger-strong)' : 'var(--success-strong)'),
               color: '#fff', border: 'none', alignSelf: 'flex-start',
             }}
           >
@@ -178,9 +179,9 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
           {msg && (
             <div style={{
               padding: '8px 12px', borderRadius: 6, fontSize: 12,
-              background: msg.type === 'error' ? '#3d1515' : '#1c2a1c',
-              color: msg.type === 'error' ? '#ffa198' : '#3fb950',
-              border: `1px solid ${msg.type === 'error' ? '#f85149' : '#3fb95066'}`,
+              background: msg.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
+              color: msg.type === 'error' ? 'var(--danger-text)' : 'var(--success)',
+              border: `1px solid ${msg.type === 'error' ? 'var(--danger)' : 'var(--success-tint-border)'}`,
             }}>
               {msg.text}
             </div>
