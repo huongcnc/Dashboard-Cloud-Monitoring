@@ -6,12 +6,12 @@ from typing import Any
 import httpx
 
 
-ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "https://192.168.48.10:9200").rstrip("/")
+ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "http://elk-elasticsearch:9200").rstrip("/")
 ELASTICSEARCH_USERNAME = os.getenv("ELASTICSEARCH_USERNAME", "elastic")
 ELASTICSEARCH_PASSWORD = os.getenv("ELASTICSEARCH_PASSWORD", "")
 ELASTICSEARCH_VERIFY_TLS = os.getenv("ELASTICSEARCH_VERIFY_TLS", "false").lower() in {"1", "true", "yes"}
 ELASTICSEARCH_TIMEOUT = float(os.getenv("ELASTICSEARCH_TIMEOUT", "10"))
-ELASTIC_LOG_INDEX = os.getenv("ELASTIC_LOG_INDEX", "filebeat-*")
+ELASTIC_LOG_INDEX = os.getenv("ELASTIC_LOG_INDEX", "logs-*")
 ELASTIC_ALERT_INDEX = os.getenv("ELASTIC_ALERT_INDEX", ".alerts-security.alerts-default")
 
 
