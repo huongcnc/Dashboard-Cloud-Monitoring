@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchAlerts } from '../utils/api';
+import TimeRangePicker from '../components/TimeRangePicker';
+import {
+  resolveRange, inRange, isRangeActive, loadSharedRange, saveSharedRange, DEFAULT_RANGE,
+} from '../utils/timeRange';
 
 /* ------------------------------------------------------------------ */
 /*  Hằng số & tiện ích                                                 */
@@ -224,6 +228,8 @@ export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [tick, setTick] = useState(0);
+  const [range, setRange] = useState(loadSharedRange);
+  const [appliedRange, setAppliedRange] = useState({ from: null, to: null });
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -247,14 +253,20 @@ export default function AlertsPage() {
     const id = ++reqId.current;
     setLoading(true);
     setError('');
-    fetchAlerts(page, pageSize, debouncedQ)
-      .then(res => { if (id === reqId.current) setData(res); })
+    const resolved = resolveRange(range);
+    fetchAlerts(page, pageSize, debouncedQ, resolved)
+      .then(res => { if (id === reqId.current) { setData(res); setAppliedRange(resolved); } })
       .catch(e => { if (id === reqId.current) setError(e.message); })
       .finally(() => { if (id === reqId.current) setLoading(false); });
-  }, [page, pageSize, debouncedQ, tick]);
+  }, [page, pageSize, debouncedQ, tick, range]);
 
   /* ---------- dữ liệu dẫn xuất ---------- */
-  const allRows = useMemo(() => (data?.alerts || []).map(toRow), [data]);
+  const allRows = useMemo(
+    () => (data?.alerts || []).map(toRow).filter(r => inRange(r.ts, appliedRange)),
+    [data, appliedRange],
+  );
+  const rangeOn = isRangeActive(range);
+  const changeRange = r => { setRange(r); saveSharedRange(r); setPage(1); };
 
   /* tìm kiếm trên toàn bộ JSON của cảnh báo (như bản cũ) */
   const base = useMemo(() => {
@@ -298,7 +310,7 @@ export default function AlertsPage() {
 
   const total = data?.total || 0;
   const totalPages = data?.total_pages || 1;
-  const filtersActive = sevFilter !== 'ALL' || statusFilter !== 'ALL' || !!debouncedQ.trim();
+  const filtersActive = sevFilter !== 'ALL' || statusFilter !== 'ALL' || !!debouncedQ.trim() || rangeOn;
 
   /* ---------- thao tác cột ---------- */
   const startResize = (e, key) => {
@@ -348,7 +360,7 @@ export default function AlertsPage() {
   };
 
   const resetColumns = () => { setWidths(DEFAULT_WIDTHS); setHidden(DEFAULT_HIDDEN); setWrap(false); setSort({ key: 'timestamp', dir: 'desc' }); };
-  const clearFilters = () => { setSevFilter('ALL'); setStatusFilter('ALL'); setQ(''); setDebouncedQ(''); setPage(1); };
+  const clearFilters = () => { setSevFilter('ALL'); setStatusFilter('ALL'); setQ(''); setDebouncedQ(''); changeRange(DEFAULT_RANGE); };
 
   /* ---------- khung chi tiết ---------- */
   const openDetail = row => {
@@ -464,9 +476,9 @@ export default function AlertsPage() {
         <div style={s.stat}><span style={s.statLabel}>Risk trung bình</span><b style={s.kpiNum}>{avgRisk ?? '—'}</b></div>
         <div style={s.stat}><span style={s.statLabel}>Tổng (toàn hệ thống)</span><b style={s.kpiNum}>{total.toLocaleString('vi-VN')}</b></div>
       </div>
-      <p style={s.kpiNote}>Thống kê tính trên {base.length} cảnh báo đang tải ở trang này.</p>
+      {/* <p style={s.kpiNote}>Thống kê tính trên {base.length} cảnh báo đang tải ở trang này.</p>
 
-      <Timeline rows={base} />
+      <Timeline rows={base} /> */}
 
       {/* ----- thanh công cụ ----- */}
       <div style={s.toolbar}>
@@ -476,6 +488,7 @@ export default function AlertsPage() {
           onChange={e => setQ(e.target.value)}
           placeholder="Tìm rule, mô tả, host, user, IP, MITRE..."
         />
+        <TimeRangePicker value={range} onChange={changeRange} />
         <select style={s.select} value={statusFilter} onChange={e => setStatusFilter(e.target.value)} title="Lọc theo trạng thái">
           <option value="ALL">Mọi trạng thái</option>
           {statuses.map(st => <option key={st} value={st}>{STATUS_LABEL[st] || st}</option>)}
@@ -543,7 +556,12 @@ export default function AlertsPage() {
           </div>
 
           {loading && !data && <div style={s.empty}>Đang tải dữ liệu cảnh báo...</div>}
-          {!loading && !sorted.length && <div style={s.empty}>Không có cảnh báo phù hợp.</div>}
+          {!loading && !sorted.length && (
+            <div style={s.empty}>
+              Không có cảnh báo phù hợp{rangeOn ? ' trong khoảng thời gian đã chọn' : ''}.
+              {rangeOn && <button style={s.linkBtn} onClick={() => changeRange(DEFAULT_RANGE)}>Xem tất cả thời gian</button>}
+            </div>
+          )}
 
           {sorted.map((r, i) => (
             <div key={r.a.id || i} className="al-row" style={{ ...s.row, gridTemplateColumns: template }} onClick={() => openDetail(r)}>

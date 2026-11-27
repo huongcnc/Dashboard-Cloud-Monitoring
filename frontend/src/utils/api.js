@@ -1,5 +1,6 @@
 ﻿import fallbackLogs from '../logs.json';
 import fallbackAlerts from '../alert.json';
+import { inRange } from './timeRange';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -23,11 +24,12 @@ async function fetchJson(url) {
 
 // logs.json / alert.json chỉ là 1 trang snapshot nên phải tự tìm kiếm + phân trang lại
 // (không dùng total / total_pages ghi sẵn trong file vì chúng là của toàn bộ Elasticsearch)
-function paginateLocal(items, { page, pageSize, query, listKey, reason }) {
+function paginateLocal(items, { page, pageSize, query, range, listKey, reason }) {
   const kw = (query || '').trim().toLowerCase();
+  const inTime = items.filter(item => inRange(new Date(item.timestamp).getTime(), range));
   const filtered = kw
-    ? items.filter(item => JSON.stringify(item).toLowerCase().includes(kw))
-    : items;
+    ? inTime.filter(item => JSON.stringify(item).toLowerCase().includes(kw))
+    : inTime;
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -45,24 +47,32 @@ function paginateLocal(items, { page, pageSize, query, listKey, reason }) {
 }
 
 // === Logs & Alerts (cu) ===
-export async function fetchLogs(page = 1, pageSize = 50, query = '') {
+// range = { from: Date|null, to: Date|null } -> &from=...&to=... (ISO-8601, UTC)
+function rangeParams(range) {
+  let qs = '';
+  if (range?.from) qs += `&from=${encodeURIComponent(range.from.toISOString())}`;
+  if (range?.to) qs += `&to=${encodeURIComponent(range.to.toISOString())}`;
+  return qs;
+}
+
+export async function fetchLogs(page = 1, pageSize = 50, query = '', range = null) {
   try {
-    return await fetchJson(`${BASE_URL}/logs?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
+    return await fetchJson(`${BASE_URL}/logs?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}${rangeParams(range)}`);
   } catch (err) {
     console.warn('[fetchLogs] Không lấy được từ API, dùng logs.json:', err.message);
     return paginateLocal(fallbackLogs.logs || [], {
-      page, pageSize, query, listKey: 'logs', reason: err.message,
+      page, pageSize, query, range, listKey: 'logs', reason: err.message,
     });
   }
 }
 
-export async function fetchAlerts(page = 1, pageSize = 50, query = '') {
+export async function fetchAlerts(page = 1, pageSize = 50, query = '', range = null) {
   try {
-    return await fetchJson(`${BASE_URL}/api/alerts?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
+    return await fetchJson(`${BASE_URL}/api/alerts?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}${rangeParams(range)}`);
   } catch (err) {
     console.warn('[fetchAlerts] Không lấy được từ API, dùng alert.json:', err.message);
     return paginateLocal(fallbackAlerts.alerts || [], {
-      page, pageSize, query, listKey: 'alerts', reason: err.message,
+      page, pageSize, query, range, listKey: 'alerts', reason: err.message,
     });
   }
 }

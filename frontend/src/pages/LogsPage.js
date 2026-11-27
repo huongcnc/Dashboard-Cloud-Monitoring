@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchLogs } from '../utils/api';
+import TimeRangePicker from '../components/TimeRangePicker';
+import {
+  resolveRange, inRange, isRangeActive, loadSharedRange, saveSharedRange, DEFAULT_RANGE,
+} from '../utils/timeRange';
 
 /* ------------------------------------------------------------------ */
 /*  Cấu hình                                                           */
@@ -24,7 +28,7 @@ const fmtTime = v => {
 
 /* Mỗi cột = 1 trường dữ liệu, giống Discover của Kibana */
 const COLUMNS = [
-  { key: 'timestamp',    label: 'Time stamp',   width: 200, get: l => fmtTime(l.timestamp) },
+  { key: 'timestamp',    label: 'Thời gian',   width: 200, get: l => fmtTime(l.timestamp) },
   { key: 'level',        label: 'Level',       width: 90,  get: l => l.level || '' },
   { key: 'dataset',      label: 'Dataset',     width: 210, get: l => l.dataset || '' },
   { key: 'event_kind',   label: 'Event kind',  width: 100, get: l => l.event_kind || '' },
@@ -78,6 +82,8 @@ export default function LogsPage() {
   const [debouncedQ, setDebouncedQ] = useState('');
   const [page, setPage] = useState(1);
   const [tick, setTick] = useState(0);
+  const [range, setRange] = useState(loadSharedRange);
+  const [appliedRange, setAppliedRange] = useState({ from: null, to: null }); // khoảng đã dùng cho dữ liệu đang hiện
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -105,11 +111,12 @@ export default function LogsPage() {
     const id = ++reqId.current;
     setLoading(true);
     setError('');
-    fetchLogs(page, pageSize, debouncedQ)
-      .then(res => { if (id === reqId.current) setData(res); })
+    const resolved = resolveRange(range); // tính lại mỗi lần tải để "24 giờ qua", "Hôm nay" luôn mới
+    fetchLogs(page, pageSize, debouncedQ, resolved)
+      .then(res => { if (id === reqId.current) { setData(res); setAppliedRange(resolved); } })
       .catch(e => { if (id === reqId.current) setError(e.message); })
       .finally(() => { if (id === reqId.current) setLoading(false); });
-  }, [page, pageSize, debouncedQ, tick]);
+  }, [page, pageSize, debouncedQ, tick, range]);
 
   /* Esc đóng khung chi tiết */
   useEffect(() => {
@@ -119,7 +126,13 @@ export default function LogsPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [detail]);
 
-  const rows = useMemo(() => data?.logs || [], [data]);
+  /* lọc thêm ở client để đúng cả khi backend chưa hỗ trợ from/to */
+  const rows = useMemo(
+    () => (data?.logs || []).filter(l => inRange(new Date(l.timestamp).getTime(), appliedRange)),
+    [data, appliedRange],
+  );
+  const rangeOn = isRangeActive(range);
+  const changeRange = r => { setRange(r); saveSharedRange(r); setPage(1); };
   const total = data?.total || 0;
   const totalPages = data?.total_pages || 1;
   const visible = useMemo(() => COLUMNS.filter(c => !hidden.includes(c.key)), [hidden]);
@@ -231,6 +244,7 @@ export default function LogsPage() {
           onChange={e => setQ(e.target.value)}
           placeholder="Tìm document ID, host, user, command, dataset, message..."
         />
+        <TimeRangePicker value={range} onChange={changeRange} />
         <label style={s.check}>
           <input type="checkbox" checked={wrap} onChange={e => setWrap(e.target.checked)} />
           Xuống dòng
@@ -291,7 +305,12 @@ export default function LogsPage() {
             ))}
           </div>
 
-          {!loading && !rows.length && <div style={s.empty}>Không có log phù hợp.</div>}
+          {!loading && !rows.length && (
+            <div style={s.empty}>
+              Không có log phù hợp{rangeOn ? ' trong khoảng thời gian đã chọn' : ''}.
+              {rangeOn && <button style={s.linkBtn} onClick={() => changeRange(DEFAULT_RANGE)}>Xem tất cả thời gian</button>}
+            </div>
+          )}
           {loading && !data && <div style={s.empty}>Đang tải log...</div>}
 
           {rows.map((log, i) => (
@@ -340,7 +359,7 @@ export default function LogsPage() {
 
             <dl style={s.dl}>
               {[
-                ['Time stamp', fmtTime(detail.timestamp)],
+                ['Thời gian', fmtTime(detail.timestamp)],
                 ['Level', detail.level],
                 ['Dataset', detail.dataset],
                 ['Service', detail.service],
@@ -395,6 +414,7 @@ const s = {
   h3: { fontSize: 13, margin: '18px 0 8px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 },
   muted: { color: 'var(--text-muted)', fontSize: 12, margin: '4px 0 0' },
 
+  linkBtn: { background: 'none', border: 0, color: 'var(--accent-text)', cursor: 'pointer', fontSize: 13, marginLeft: 8, textDecoration: 'underline' },
   btnPrimary: { background: 'var(--success-strong)', color: '#fff', border: 0, borderRadius: 6, padding: '9px 16px', cursor: 'pointer' },
   btn: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 12px', cursor: 'pointer', fontSize: 13 },
   select: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13 },
