@@ -66,10 +66,6 @@ export default function AIAnalysisPage({ customerId, data, result, loading, erro
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
       <div style={{ flex: 1, minWidth: 260 }}>
         <h1 style={{ margin: 0, fontSize: 22, color: 'var(--text)' }}>Kết quả phân tích AI</h1>
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Gemini đọc <code>merged-results.json</code> + <code>iac.zip</code> trên S3, tóm tắt lỗ hổng theo nhóm
-          và gộp remediation của KICS thành khuyến nghị ưu tiên. Số liệu giữ nguyên từ scanner.
-        </p>
         <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
           Customer: <b style={{ color: 'var(--text-muted)' }}>{customerId || 'N/A'}</b>
           {scannedAt ? <> · Lần quét: <b style={{ color: 'var(--text-muted)' }}>{fmt(scannedAt)}</b></> : null}
@@ -119,10 +115,6 @@ export default function AIAnalysisPage({ customerId, data, result, loading, erro
         <div style={{ ...card, textAlign: 'center', padding: '48px 24px' }}>
           <div style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, marginBottom: 8 }}>
             Chưa có kết quả phân tích
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Hệ thống tự gọi Gemini ngay khi pipeline quét xong. Kết quả được giữ lại khi tải lại trang;
-            bấm “Quét ngay” ở Dashboard để phân tích lần mới.
           </div>
         </div>
       )}
@@ -257,11 +249,6 @@ export default function AIAnalysisPage({ customerId, data, result, loading, erro
                 );
               })}
             </div>
-          </div>
-
-          <div style={{ ...card, padding: '14px 18px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-            <b style={{ color: 'var(--text-muted)' }}>Ghi chú phương pháp:</b> {result.note} Mọi khuyến nghị đều gắn với
-            finding gốc của KICS/Trivy và bị loại nếu không truy vết được. AI không phát hiện thêm lỗ hổng.
           </div>
         </>
       )}

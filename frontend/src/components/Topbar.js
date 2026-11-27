@@ -44,7 +44,7 @@ export default function Topbar({ clock, scanInfo, page, theme, onToggleTheme }) 
           {PAGE_TITLES[page] || 'Dashboard'}
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>
-          Cloud Security Monitoring - lien ket pipeline GitHub Actions
+          Cloud Security Monitoring
         </p>
       </div>
 

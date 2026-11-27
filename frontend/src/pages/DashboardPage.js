@@ -168,12 +168,11 @@ export default function DashboardPage({ data, customerId, onSelectHistory }) {
 
         {/* Scan info */}
         <Card>
-          <SectionLabel>Thông tin quét</SectionLabel>
+          <SectionLabel>Scan metadata</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <InfoRow label="Files quét"     value={s.files_scanned}              />
-            <InfoRow label="Dòng quét"      value={(s.lines_scanned || 0).toLocaleString()} />
-            <InfoRow label="Phiên bản KICS" value={s.kics_version || 'N/A'}      mono />
-            <InfoRow label="Trạng thái"     value="✓ Hoàn thành"                 success />
+            <InfoRow label="Files"     value={s.files_scanned}              />
+            <InfoRow label="Version KICS" value={s.kics_version || 'N/A'}      mono />
+            <InfoRow label="Status"     value="✓ Completed"                 success />
           </div>
         </Card>
       </div>

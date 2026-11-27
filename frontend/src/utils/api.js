@@ -1,16 +1,70 @@
-﻿const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+﻿import fallbackLogs from '../logs.json';
+import fallbackAlerts from '../alert.json';
+
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// Quá thời gian này mà backend chưa trả lời thì coi như lỗi và chuyển sang dữ liệu JSON cục bộ
+const FETCH_TIMEOUT_MS = 5000;
+
+// fetch + timeout, ném lỗi nếu mạng hỏng / quá hạn / HTTP không OK
+async function fetchJson(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    throw err.name === 'AbortError' ? new Error('Quá thời gian chờ máy chủ') : err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// logs.json / alert.json chỉ là 1 trang snapshot nên phải tự tìm kiếm + phân trang lại
+// (không dùng total / total_pages ghi sẵn trong file vì chúng là của toàn bộ Elasticsearch)
+function paginateLocal(items, { page, pageSize, query, listKey, reason }) {
+  const kw = (query || '').trim().toLowerCase();
+  const filtered = kw
+    ? items.filter(item => JSON.stringify(item).toLowerCase().includes(kw))
+    : items;
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    total,
+    page: safePage,
+    page_size: pageSize,
+    total_pages: totalPages,
+    [listKey]: filtered.slice(start, start + pageSize),
+    source: 'local-json',
+    fallback: true,           // để trang biết mà hiện banner
+    fallback_reason: reason,
+  };
+}
 
 // === Logs & Alerts (cu) ===
 export async function fetchLogs(page = 1, pageSize = 50, query = '') {
-  const res = await fetch(`${BASE_URL}/logs?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
-  if (!res.ok) throw new Error(`Server error ${res.status}`);
-  return res.json();
+  try {
+    return await fetchJson(`${BASE_URL}/logs?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
+  } catch (err) {
+    console.warn('[fetchLogs] Không lấy được từ API, dùng logs.json:', err.message);
+    return paginateLocal(fallbackLogs.logs || [], {
+      page, pageSize, query, listKey: 'logs', reason: err.message,
+    });
+  }
 }
 
 export async function fetchAlerts(page = 1, pageSize = 50, query = '') {
-  const res = await fetch(`${BASE_URL}/api/alerts?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
-  if (!res.ok) throw new Error(`Server error ${res.status}`);
-  return res.json();
+  try {
+    return await fetchJson(`${BASE_URL}/api/alerts?page=${page}&page_size=${pageSize}&q=${encodeURIComponent(query)}`);
+  } catch (err) {
+    console.warn('[fetchAlerts] Không lấy được từ API, dùng alert.json:', err.message);
+    return paginateLocal(fallbackAlerts.alerts || [], {
+      page, pageSize, query, listKey: 'alerts', reason: err.message,
+    });
+  }
 }
 
 export async function checkHealth() {

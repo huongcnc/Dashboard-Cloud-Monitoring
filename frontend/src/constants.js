@@ -16,12 +16,12 @@ export const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',        icon: '⊞' },
   { id: 'ai',         label: 'Phân tích AI',     icon: '◈' },
   { id: 'scan',       label: 'Quét & Lỗ hổng',   icon: '⬡' },
-  { id: 'alerts',     label: 'Cảnh báo',          icon: '⚠' },
-  { id: 'reports',    label: 'Báo cáo',           icon: '⊟' },
   { id: 'logs',       label: 'Logs',              icon: '≡' },
-  { id: 'config',     label: 'Cấu hình',          icon: '⚙' },
-  { id: 'users',      label: 'Người dùng',        icon: '◉' },
-  { id: 'settings',   label: 'Cài đặt',           icon: '≎' },
+  { id: 'alerts',     label: 'Cảnh báo',          icon: '⚠' },
+  // { id: 'reports',    label: 'Báo cáo',           icon: '⊟' },
+  // { id: 'config',     label: 'Cấu hình',          icon: '⚙' },
+  // { id: 'users',      label: 'Người dùng',        icon: '◉' },
+  // { id: 'settings',   label: 'Cài đặt',           icon: '≎' },
 ];
 
 export const SAMPLE_DATA = {

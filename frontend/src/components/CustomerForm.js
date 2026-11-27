@@ -84,10 +84,8 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
       {/* Mode selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[
-          { id: 'setup', label: 'Them khach + key' },
-          { id: 'scan', label: 'Quet ngay' },
-          { id: 'load', label: 'Tai ket qua' },
-          { id: 'remove', label: 'Xoa khach' },
+          { id: 'setup', label: 'Thêm khách hàng + key' },
+          { id: 'scan', label: 'Quét ngay' }
         ].map(m => (
           <button
             key={m.id}
@@ -140,24 +138,13 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Region (auto = tu dong do)</label>
+                  <label style={labelStyle}>Region</label>
                   <input
                     style={inputStyle}
                     value={region}
                     placeholder="auto hoac us-east-1,ap-southeast-1"
                     onChange={e => setRegion(e.target.value)}
                   />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Chu ky quet</label>
-                  <select
-                    style={inputStyle}
-                    value={schedule}
-                    onChange={e => setSchedule(e.target.value)}
-                  >
-                    <option value="daily">Hang ngay</option>
-                    <option value="weekly">Hang tuan</option>
-                  </select>
                 </div>
               </div>
             </>
@@ -173,7 +160,7 @@ export default function CustomerForm({ onSubmit, onRemove, loading }) {
               color: '#fff', border: 'none', alignSelf: 'flex-start',
             }}
           >
-            {loading ? 'Dang xu ly...' : (mode === 'setup' ? 'Luu key' : mode === 'scan' ? 'Bat dau quet' : mode === 'load' ? 'Tai ket qua moi nhat' : 'Xoa khach')}
+            {loading ? 'Dang xu ly...' : (mode === 'setup' ? 'Lưu key' : mode === 'scan' ? 'Bắt đầu quét' : mode === 'load' ? 'Tai ket qua moi nhat' : 'Xoa khach')}
           </button>
 
           {msg && (
